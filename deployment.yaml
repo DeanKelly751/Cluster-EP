@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-ep-poc-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-ep-poc
+  template:
+    metadata:
+      labels:
+        app: cluster-ep-poc
+    spec:
+      containers:
+      - name: cluster-ep-poc
+        image: quay.io/dekelly/endpoint:v0.0.2
+      # imagePullPolicy: Always
+
