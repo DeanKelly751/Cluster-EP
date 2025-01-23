@@ -3,36 +3,37 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
+
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 func main() {
-	// Load the kubeconfig
-	kubeconfigPath := clientcmd.RecommendedHomeFile // Path to the kubeconfig file (usually ~/.kube/config)
-	config, err := clientcmd.LoadFromFile(kubeconfigPath)
-	if err != nil {
-		log.Fatalf("Failed to load kubeconfig: %v", err)
-	}
+	var config *rest.Config
+	var err error
 
-	// Get the current context
-	currentContext := config.CurrentContext
-	if currentContext == "" {
-		log.Fatalf("No current context is set in the kubeconfig")
-	}
-	fmt.Printf("Current Context: %s\n", currentContext)
-
-	// Get cluster information for the current context
-	context := config.Contexts[currentContext]
-	if context == nil {
-		log.Fatalf("Context %s not found in kubeconfig", currentContext)
-	}
-
-	cluster := config.Clusters[context.Cluster]
-	if cluster == nil {
-		log.Fatalf("Cluster %s not found in kubeconfig", context.Cluster)
+	// Check if running inside a Kubernetes cluster
+	if _, exists := os.LookupEnv("KUBERNETES_SERVICE_HOST"); exists {
+		// Use in-cluster configuration
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			log.Fatalf("Failed to load in-cluster configuration: %v", err)
+		}
+		fmt.Println("Using in-cluster configuration")
+	} else {
+		// Fall back to kubeconfig file for local development
+		kubeconfigPath := clientcmd.RecommendedHomeFile // Default kubeconfig path (~/.kube/config)
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		if err != nil {
+			log.Fatalf("Failed to load kubeconfig from file: %v", err)
+		}
+		fmt.Println("Using local kubeconfig file")
 	}
 
 	// Print the cluster endpoint
-	fmt.Printf("Cluster Endpoint: %s\n", cluster.Server)
+	fmt.Printf("Cluster Endpoint: %s\n", config.Host)
+
+
 }
